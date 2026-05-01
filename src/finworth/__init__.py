@@ -1,6 +1,6 @@
 """finworth — Complete Indian financial calculator library."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from finworth.core import xirr, cagr, absolute_return, inflation_adjusted
 from finworth.mf import sip_maturity, swp_projection, mf_capital_gains, sip_xirr

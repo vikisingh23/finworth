@@ -407,3 +407,43 @@ class TestPlanning:
         assert r["corpus_needed"] > 0
         assert r["monthly_sip_needed"] > 0
         assert r["expense_at_retirement"] > r["current_monthly_expense"]
+
+
+# === AI INTEGRATION ===
+
+class TestAI:
+    def test_get_tools(self):
+        from finworth.ai import get_tools
+        tools = get_tools()
+        assert len(tools) >= 20
+        assert all("name" in t and "fn" in t and "description" in t for t in tools)
+
+    def test_openai_functions(self):
+        from finworth.ai import get_openai_functions
+        fns = get_openai_functions()
+        assert len(fns) >= 20
+        assert all("parameters" in f and "type" in f["parameters"] for f in fns)
+
+    def test_find_tool_sip(self):
+        from finworth.ai import find_tool
+        tool = find_tool("how much will my SIP of 10000 give me")
+        assert tool["name"] == "sip_maturity"
+
+    def test_find_tool_emi(self):
+        from finworth.ai import find_tool
+        tool = find_tool("calculate home loan EMI")
+        assert tool["name"] == "emi"
+
+    def test_find_tool_tax(self):
+        from finworth.ai import find_tool
+        tool = find_tool("calculate my income tax")
+        assert tool["name"] == "income_tax_slab"
+
+    def test_find_tool_no_match(self):
+        from finworth.ai import find_tool
+        assert find_tool("what is the weather today") is None
+
+    def test_execute(self):
+        from finworth.ai import execute
+        r = execute("fd_maturity", principal=500000, rate=0.07, years=3)
+        assert r["maturity"] > 500000
