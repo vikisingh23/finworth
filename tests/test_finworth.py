@@ -289,3 +289,55 @@ class TestHistoricalTax:
         import pytest
         with pytest.raises(ValueError):
             fw.income_tax_slab(1000000, "new", "2018-19")
+
+
+# === GRATUITY ===
+
+class TestGratuity:
+    def test_eligible(self):
+        r = fw.gratuity(80000, 10)
+        assert r["eligible"]
+        assert r["gratuity_amount"] > 0
+        assert r["completed_years"] == 10
+
+    def test_not_eligible(self):
+        r = fw.gratuity(80000, 3)
+        assert not r["eligible"]
+
+    def test_rounding_years(self):
+        r = fw.gratuity(80000, 10.6)  # >6 months rounds up
+        assert r["completed_years"] == 11
+
+    def test_tax_exempt_cap(self):
+        r = fw.gratuity(500000, 30)  # large gratuity
+        assert r["tax_exempt"] <= 2000000
+
+
+# === EMI ===
+
+class TestEMI:
+    def test_home_loan(self):
+        r = fw.emi(5000000, 0.085, 20)
+        assert r["emi"] > 0
+        assert r["total_interest"] > 0
+        assert r["total_payment"] == r["principal"] + r["total_interest"]
+
+    def test_zero_rate(self):
+        r = fw.emi(1200000, 0, 10)
+        assert r["emi"] == 10000
+
+    def test_amortization(self):
+        schedule = fw.emi_amortization(5000000, 0.085, 20)
+        assert len(schedule) == 20
+        assert schedule[0]["interest_paid"] > schedule[0]["principal_paid"]  # early years interest-heavy
+        assert schedule[-1]["balance"] == 0
+
+    def test_prepayment_reduce_tenure(self):
+        r = fw.emi_prepayment_impact(5000000, 0.085, 20, 500000, 24, "reduce_tenure")
+        assert r["months_saved"] > 0
+        assert r["interest_saved"] > 0
+
+    def test_prepayment_reduce_emi(self):
+        r = fw.emi_prepayment_impact(5000000, 0.085, 20, 500000, 24, "reduce_emi")
+        assert r["new_emi"] < r["original_emi"]
+        assert r["interest_saved"] > 0
