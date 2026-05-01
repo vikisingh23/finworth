@@ -196,3 +196,96 @@ class TestTax:
     def test_income_tax_old_regime(self):
         r = fw.income_tax_slab(1500000, "old")
         assert r["total_tax"] > 0
+
+
+# === PPF ===
+
+class TestPPF:
+    def test_maturity_15_years(self):
+        r = fw.ppf_maturity(150000, 0.071, 15)
+        assert r["invested"] == 2250000
+        assert r["maturity"] > 2250000
+        assert len(r["yearly_breakdown"]) == 15
+
+    def test_max_cap(self):
+        r = fw.ppf_maturity(200000, 0.071, 15)  # should cap at 1.5L
+        assert r["invested"] == 2250000
+
+    def test_extension(self):
+        base = fw.ppf_maturity(150000, 0.071, 15)
+        ext = fw.ppf_extension(base["maturity"], 150000, 0.071, 5)
+        assert ext["final_balance"] > base["maturity"]
+
+
+# === NPS ===
+
+class TestNPS:
+    def test_maturity(self):
+        r = fw.nps_maturity(5000, 0.10, 30)
+        assert r["total_corpus"] > r["invested"]
+        assert r["monthly_pension"] > 0
+        assert r["annuity_percent"] >= 0.40
+
+    def test_min_annuity(self):
+        r = fw.nps_maturity(5000, 0.10, 30, annuity_percent=0.20)
+        assert r["annuity_percent"] == 0.40  # forced to min 40%
+
+    def test_tax_benefit_old(self):
+        r = fw.nps_tax_benefit(200000, regime="old", tax_slab=0.3)
+        assert r["sec_80ccd1"] == 150000
+        assert r["sec_80ccd1b"] == 50000
+        assert r["tax_saved"] > 0
+
+    def test_tax_benefit_new(self):
+        r = fw.nps_tax_benefit(200000, regime="new", tax_slab=0.3)
+        assert r["sec_80ccd1b"] == 0  # no 1B in new regime
+
+
+# === HISTORICAL TAX SLABS ===
+
+class TestHistoricalTax:
+    def test_old_regime_2019(self):
+        r = fw.income_tax_slab(1000000, "old", "2019-20")
+        assert r["fy"] == "2019-20"
+        assert r["total_tax"] > 0
+
+    def test_new_regime_2020(self):
+        r = fw.income_tax_slab(1000000, "new", "2020-21")
+        assert r["fy"] == "2020-21"
+        assert r["standard_deduction"] == 0  # no std deduction in early new regime
+
+    def test_new_regime_2023(self):
+        r = fw.income_tax_slab(1000000, "new", "2023-24")
+        assert r["standard_deduction"] == 50000
+
+    def test_new_regime_2024(self):
+        r = fw.income_tax_slab(1000000, "new", "2024-25")
+        assert r["standard_deduction"] == 75000
+
+    def test_rebate_old_regime(self):
+        r = fw.income_tax_slab(500000, "old", "2022-23")
+        assert r["total_tax"] == 0  # 87A rebate
+
+    def test_rebate_new_regime_2024(self):
+        r = fw.income_tax_slab(700000, "new", "2024-25")
+        assert r["total_tax"] == 0  # 87A rebate up to 7L
+
+    def test_compare_regimes(self):
+        r = fw.income_tax_compare(1500000, "2024-25")
+        assert "old_regime" in r
+        assert "new_regime" in r
+        assert r["recommendation"] in ("old", "new")
+
+    def test_slab_breakdown(self):
+        r = fw.income_tax_slab(2000000, "new", "2024-25")
+        assert len(r["slab_breakdown"]) > 0
+        assert all("slab" in s and "tax" in s for s in r["slab_breakdown"])
+
+    def test_surcharge(self):
+        r = fw.income_tax_slab(60000000, "new", "2024-25")
+        assert r["surcharge"] > 0
+
+    def test_invalid_fy(self):
+        import pytest
+        with pytest.raises(ValueError):
+            fw.income_tax_slab(1000000, "new", "2018-19")
