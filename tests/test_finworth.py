@@ -341,3 +341,69 @@ class TestEMI:
         r = fw.emi_prepayment_impact(5000000, 0.085, 20, 500000, 24, "reduce_emi")
         assert r["new_emi"] < r["original_emi"]
         assert r["interest_saved"] > 0
+
+
+# === SALARY ===
+
+class TestSalary:
+    def test_hra_exemption(self):
+        r = fw.hra_exemption(50000, 20000, 25000, metro=True)
+        assert r["exempt_amount"] > 0
+        assert r["taxable_hra"] >= 0
+        assert r["exempt_amount"] <= r["annual_hra_received"]
+
+    def test_hra_no_rent(self):
+        r = fw.hra_exemption(50000, 20000, 0)
+        assert r["exempt_amount"] == 0
+
+    def test_ctc_to_inhand(self):
+        r = fw.ctc_to_inhand(1500000)
+        assert r["net_monthly"] > 0
+        assert r["basic_annual"] == 600000
+        assert r["employee_pf_annual"] > 0
+
+
+# === EPF ===
+
+class TestEPF:
+    def test_maturity(self):
+        r = fw.epf_maturity(50000, 0.081, 30)
+        assert r["total_corpus"] > r["total_contributed"]
+        assert r["interest_earned"] > 0
+
+    def test_short_tenure(self):
+        r = fw.epf_maturity(50000, 0.081, 5)
+        assert r["total_corpus"] > 0
+
+
+# === SSY ===
+
+class TestSSY:
+    def test_maturity(self):
+        r = fw.ssy_maturity(150000, 0.082, 15)
+        assert r["invested"] == 2250000
+        assert r["maturity"] > r["invested"]
+        assert r["maturity_year"] == 21
+
+    def test_min_max_cap(self):
+        r = fw.ssy_maturity(200000)  # capped at 1.5L
+        assert r["invested"] == 2250000
+
+
+# === PLANNING ===
+
+class TestPlanning:
+    def test_lumpsum(self):
+        r = fw.lumpsum_maturity(500000, 0.12, 10)
+        assert r["maturity"] > r["invested"]
+
+    def test_future_cost(self):
+        r = fw.future_cost(50000, 0.06, 20)
+        assert r["future_cost"] > r["current_cost"]
+        assert r["multiplier"] > 1
+
+    def test_retirement_corpus(self):
+        r = fw.retirement_corpus(50000, 30, 60, 85)
+        assert r["corpus_needed"] > 0
+        assert r["monthly_sip_needed"] > 0
+        assert r["expense_at_retirement"] > r["current_monthly_expense"]
