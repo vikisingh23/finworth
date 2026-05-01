@@ -447,3 +447,38 @@ class TestAI:
         from finworth.ai import execute
         r = execute("fd_maturity", principal=500000, rate=0.07, years=3)
         assert r["maturity"] > 500000
+
+
+# === WORKFLOWS ===
+
+class TestWorkflows:
+    def test_financial_health_check_basic(self):
+        r = fw.financial_health_check(ctc=1500000, age=30, monthly_rent=25000)
+        assert r["salary"]["ctc"] == 1500000
+        assert r["salary"]["monthly_inhand_new_regime"] > 0
+        assert r["salary"]["recommended_regime"] in ("old", "new")
+        assert r["epf_at_retirement"] > 0
+        assert r["retirement"]["corpus_needed"] > 0
+        assert r["monthly_budget"]["available_to_invest"] > 0
+
+    def test_health_check_with_nps(self):
+        r = fw.financial_health_check(ctc=2000000, age=28, monthly_rent=30000, nps_monthly=5000)
+        assert r["nps_at_retirement"] is not None
+        assert r["nps_at_retirement"]["monthly_pension"] > 0
+
+    def test_health_check_with_loan(self):
+        r = fw.financial_health_check(ctc=2500000, age=35, home_loan_principal=5000000)
+        assert r["home_loan"] is not None
+        assert r["home_loan"]["emi"] > 0
+        assert r["monthly_budget"]["emi"] > 0
+
+    def test_investment_compare(self):
+        r = fw.investment_compare(monthly=10000, years=10)
+        assert len(r["comparison"]) == 7
+        assert r["best_option"] is not None
+        assert r["comparison"][0]["post_tax"] >= r["comparison"][-1]["post_tax"]
+        assert all("absolute_return" in opt for opt in r["comparison"])
+
+    def test_investment_compare_short_term(self):
+        r = fw.investment_compare(monthly=25000, years=3, tax_slab=0.2)
+        assert r["best_option"] is not None

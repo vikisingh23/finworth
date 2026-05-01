@@ -1,6 +1,6 @@
 """finworth — Complete Indian financial calculator library."""
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 from finworth.core import xirr, cagr, absolute_return, inflation_adjusted
 from finworth.mf import sip_maturity, swp_projection, mf_capital_gains, sip_xirr
@@ -15,6 +15,7 @@ from finworth.salary import hra_exemption, ctc_to_inhand
 from finworth.planning import ssy_maturity, lumpsum_maturity, future_cost, retirement_corpus
 from finworth.stocks import stock_pnl, dividend_yield, delivery_charges, intraday_charges
 from finworth.tax import stt, gst_on_brokerage, stamp_duty, tds_on_fd, tds_on_rd, income_tax_slab, income_tax_compare
+from finworth.workflows import financial_health_check, investment_compare
 
 __all__ = [
     "xirr", "cagr", "absolute_return", "inflation_adjusted",
