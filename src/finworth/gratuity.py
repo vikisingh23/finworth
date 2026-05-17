@@ -7,23 +7,24 @@ from typing import Literal
 def gratuity(
     basic_da: float,
     years_of_service: float,
-    employee_type: Literal["private", "government"] = "private",
+    employee_type: Literal["private", "government", "fixed-term"] = "private",
 ) -> dict:
     """Gratuity calculation under Payment of Gratuity Act.
 
     Args:
         basic_da: Last drawn Basic + DA (monthly).
         years_of_service: Total years of service (min 5 years to be eligible).
-        employee_type: 'private' (15/26 formula) or 'government' (15/30 formula).
+        employee_type: 'private' (15/26), 'government' (15/30), or 'fixed-term' (pro-rata, no 5yr min per Labour Code 2025).
 
     Returns:
         Dict with eligible, gratuity_amount, tax_exempt, and taxable.
 
     Example:
         >>> gratuity(80000, 10)
-        {'eligible': True, 'gratuity_amount': 461538, 'tax_exempt': 461538, 'taxable': 0}
+        >>> gratuity(50000, 2, "fixed-term")
     """
-    eligible = years_of_service >= 5
+    # Labour Code: fixed-term workers get pro-rata gratuity (no 5-year minimum)
+    eligible = True if employee_type == "fixed-term" else years_of_service >= 5
     completed_years = int(years_of_service + 0.5)  # round to nearest year (>6 months = 1 year)
 
     if employee_type == "government":

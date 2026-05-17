@@ -62,7 +62,7 @@ def ctc_to_inhand(
     professional_tax: float = 2400,
     regime: Literal["old", "new"] = "new",
 ) -> dict:
-    """CTC to monthly in-hand salary calculator.
+    """CTC to monthly in-hand salary calculator (legacy structure).
 
     Args:
         ctc: Annual CTC.
@@ -119,4 +119,79 @@ def ctc_to_inhand(
         "net_annual": round(gross_salary - total_deductions - tax_info["total_tax"]),
         "net_monthly": round(net_monthly),
         "regime": regime,
+    }
+
+
+def salary_breakup(
+    ctc: float,
+    metro: bool = True,
+    epf_on_full: bool = False,
+) -> dict:
+    """CTC to in-hand — Labour Code 2025 compliant (Basic ≥ 50% of gross wages).
+
+    Args:
+        ctc: Annual CTC.
+        metro: True for Delhi/Mumbai/Kolkata/Chennai (50% HRA) else 40%.
+        epf_on_full: If True, PF on full basic (not capped at ₹15K).
+
+    Returns:
+        Dict with full breakup including ESI applicability.
+    """
+    basic_monthly = round(ctc * 0.50 / 12)
+    hra_monthly = round(basic_monthly * (0.50 if metro else 0.40))
+    epf_base = basic_monthly if epf_on_full else min(basic_monthly, 15000)
+    employee_pf = round(epf_base * 0.12 * 12)
+    employer_pf = round(epf_base * 0.12 * 12)
+    employer_pension = round(min(epf_base, 15000) * 0.0833 * 12)
+    gratuity_annual = round(basic_monthly * 15 / 26)
+    gross_monthly = round(ctc / 12)
+    esi_applicable = gross_monthly <= 21000
+    esi_employee = round(gross_monthly * 0.0075 * 12) if esi_applicable else 0
+    esi_employer = round(gross_monthly * 0.0325 * 12) if esi_applicable else 0
+    special_allowance = ctc - basic_monthly * 12 - hra_monthly * 12 - employer_pf - employer_pension - gratuity_annual - esi_employer
+    in_hand_annual = basic_monthly * 12 + hra_monthly * 12 + max(special_allowance, 0) - employee_pf - esi_employee
+
+    return {
+        "basic_annual": basic_monthly * 12,
+        "basic_monthly": basic_monthly,
+        "hra_annual": hra_monthly * 12,
+        "hra_monthly": hra_monthly,
+        "special_allowance": round(max(special_allowance, 0)),
+        "employee_pf": employee_pf,
+        "employer_pf": employer_pf,
+        "employer_pension": employer_pension,
+        "gratuity_provision": gratuity_annual,
+        "esi_employee": esi_employee,
+        "esi_employer": esi_employer,
+        "esi_applicable": esi_applicable,
+        "gross_annual": ctc,
+        "in_hand_annual": round(in_hand_annual),
+        "in_hand_monthly": round(in_hand_annual / 12),
+        "note": "Labour Code compliant (Basic >= 50% of gross wages)",
+    }
+
+
+def esi_contribution(gross_monthly: float) -> dict:
+    """ESI contribution calculator.
+
+    ESI applicable if gross monthly salary ≤ ₹21,000.
+    Employee: 0.75%, Employer: 3.25%.
+
+    Args:
+        gross_monthly: Monthly gross salary.
+
+    Returns:
+        Dict with applicability and contribution amounts.
+    """
+    if gross_monthly > 21000:
+        return {"applicable": False, "employee": 0, "employer": 0, "total": 0}
+    employee = round(gross_monthly * 0.0075)
+    employer = round(gross_monthly * 0.0325)
+    return {
+        "applicable": True,
+        "employee": employee,
+        "employer": employer,
+        "total": employee + employer,
+        "annual_employee": employee * 12,
+        "annual_employer": employer * 12,
     }

@@ -11,7 +11,7 @@ from finworth.nps import nps_maturity, nps_tax_benefit
 from finworth.epf import epf_maturity
 from finworth.emi import emi, emi_amortization, emi_prepayment_impact
 from finworth.gratuity import gratuity
-from finworth.salary import hra_exemption, ctc_to_inhand
+from finworth.salary import hra_exemption, ctc_to_inhand, salary_breakup, esi_contribution
 from finworth.planning import ssy_maturity, lumpsum_maturity, future_cost, retirement_corpus
 from finworth.stocks import stock_pnl, dividend_yield, delivery_charges, intraday_charges
 from finworth.tax import stt, gst_on_brokerage, stamp_duty, tds_on_fd, tds_on_rd, income_tax_slab, income_tax_compare
@@ -27,7 +27,7 @@ __all__ = [
     "epf_maturity",
     "emi", "emi_amortization", "emi_prepayment_impact",
     "gratuity",
-    "hra_exemption", "ctc_to_inhand",
+    "hra_exemption", "ctc_to_inhand", "salary_breakup", "esi_contribution",
     "ssy_maturity", "lumpsum_maturity", "future_cost", "retirement_corpus",
     "stock_pnl", "dividend_yield", "delivery_charges", "intraday_charges",
     "stt", "gst_on_brokerage", "stamp_duty", "tds_on_fd", "tds_on_rd",

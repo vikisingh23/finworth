@@ -13,6 +13,7 @@ TAX_SLABS = {
         "2022-23": {"slabs": [(250000, 0), (250000, 0.05), (500000, 0.20), (float("inf"), 0.30)], "std_deduction": 50000, "rebate_limit": 500000},
         "2023-24": {"slabs": [(250000, 0), (250000, 0.05), (500000, 0.20), (float("inf"), 0.30)], "std_deduction": 50000, "rebate_limit": 500000},
         "2024-25": {"slabs": [(250000, 0), (250000, 0.05), (500000, 0.20), (float("inf"), 0.30)], "std_deduction": 50000, "rebate_limit": 500000},
+        "2025-26": {"slabs": [(250000, 0), (250000, 0.05), (500000, 0.20), (float("inf"), 0.30)], "std_deduction": 50000, "rebate_limit": 500000},
     },
     # NEW REGIME
     "new": {
@@ -24,6 +25,8 @@ TAX_SLABS = {
         "2023-24": {"slabs": [(300000, 0), (300000, 0.05), (300000, 0.10), (300000, 0.15), (300000, 0.20), (float("inf"), 0.30)], "std_deduction": 50000, "rebate_limit": 700000},
         # FY 2024-25 (Budget 2024 — revised slabs + higher std deduction)
         "2024-25": {"slabs": [(300000, 0), (400000, 0.05), (300000, 0.10), (200000, 0.15), (300000, 0.20), (float("inf"), 0.30)], "std_deduction": 75000, "rebate_limit": 700000},
+        # FY 2025-26 (Budget 2025 — wider slabs, ₹12L rebate)
+        "2025-26": {"slabs": [(400000, 0), (400000, 0.05), (400000, 0.10), (400000, 0.15), (400000, 0.20), (400000, 0.25), (float("inf"), 0.30)], "std_deduction": 75000, "rebate_limit": 1200000},
     },
 }
 
@@ -31,14 +34,14 @@ TAX_SLABS = {
 def income_tax_slab(
     income: float,
     regime: Literal["old", "new"] = "new",
-    fy: str = "2024-25",
+    fy: str = "2025-26",
 ) -> dict:
     """Indian income tax calculation with historical slab support.
 
     Args:
         income: Total taxable income (gross salary for salaried).
         regime: 'old' or 'new' tax regime.
-        fy: Financial year — '2019-20' to '2024-25'.
+        fy: Financial year — '2019-20' to '2025-26'.
 
     Returns:
         Dict with taxable_income, slab_wise breakdown, tax, cess, total_tax, effective_rate.
@@ -53,7 +56,7 @@ def income_tax_slab(
 
     config = TAX_SLABS.get(regime, {}).get(fy)
     if not config:
-        raise ValueError(f"No slab data for regime='{regime}', fy='{fy}'. Supported: 2019-20 to 2024-25")
+        raise ValueError(f"No slab data for regime='{regime}', fy='{fy}'. Supported: 2019-20 to 2025-26")
 
     slabs = config["slabs"]
     std_deduction = config["std_deduction"]
@@ -80,7 +83,12 @@ def income_tax_slab(
 
     # Section 87A rebate
     if taxable <= rebate_limit:
-        rebate = min(tax, 12500) if fy in ("2019-20", "2020-21", "2021-22", "2022-23") else min(tax, 25000)
+        if fy in ("2019-20", "2020-21", "2021-22", "2022-23"):
+            rebate = min(tax, 12500)
+        elif fy == "2025-26":
+            rebate = tax  # Full rebate for FY 2025-26 (Budget 2025)
+        else:
+            rebate = min(tax, 25000)
         tax = max(tax - rebate, 0)
 
     surcharge = _calculate_surcharge(tax, taxable, fy)
@@ -116,7 +124,7 @@ def _calculate_surcharge(tax: float, taxable_income: float, fy: str) -> float:
         return tax * 0.37
 
 
-def income_tax_compare(income: float, fy: str = "2024-25") -> dict:
+def income_tax_compare(income: float, fy: str = "2025-26") -> dict:
     """Compare old vs new regime for a given income and FY.
 
     Returns:
